@@ -9,7 +9,7 @@
 //   reason), confirm?: [en, zh] (asks first), anyView?: true (offered from every view), run: ctx => any}.
 // This module also loads the rest of the command layer: shortcuts, notifications, search and the right-click menu.
 import { t, words, CN, MAC, glyph, keyChips, formatKeys, createLayer, addSheet } from './context_menu.js';
-import { nextLocale } from './i18n.js';
+import { nextLocale, requestLocale } from './i18n.js';
 import { openShortcuts, shortcutsOpen, closeShortcuts, VIEW_NAMES } from './shortcuts.js';
 import { searchEverything, searchSettled, warmSearch, fillPrompt } from './global_search.js';
 import { openNotifications, latestFinished, toast, visitJob, openWork } from './notifications.js';
@@ -207,6 +207,7 @@ function setTheme(theme) {
 }
 const solidNow = () => document.documentElement.dataset.glass === 'solid' || document.documentElement.classList.contains('lite');
 function reloadIn(lang) {
+    if (requestLocale(lang)) return;
     const url = new URL(location.href); url.searchParams.set('freevideo_lang', lang);
     location.assign(url.href);
 }
@@ -276,8 +277,8 @@ export function builtinCommands() {
             use: ['For older computers', '适合较旧的电脑'], keywords: ['glass', 'blur', 'lite', 'performance', 'compatibility', 'caizhi', 'boli', 'jianrong', 'ka'],
             run: () => { const solid = solidNow(); if (shell()?.setGlass) shell().setGlass(solid); else document.documentElement.dataset.glass = solid ? '' : 'solid'; }},
         {id: 'language.toggle', scope: 'settings', group: G.look, icon: 'globe', title: () => ({en: ['English interface', '切换到英文界面'], zh: ['Chinese interface', '切换到中文界面'], 'pt-BR': ['Português (Brasil)', '葡萄牙语（巴西）']})[nextLocale()],
-            use: ['Reloads the page; generations keep running', '会重新载入页面，生成不受影响'], keywords: ['language', 'english', 'chinese', 'yuyan', 'zhongwen', 'yingwen'],
-            confirm: ['Reload the page in the other language? Generations keep running.', '重新载入页面并切换语言？正在进行的生成不受影响。'],
+            use: ['Switches immediately when the Task Manager is installed; generations keep running', '已安装任务管理器时立即切换；生成不受影响'], keywords: ['language', 'english', 'chinese', 'yuyan', 'zhongwen', 'yingwen'],
+            confirm: ['Change the interface language? Generations keep running.', '切换界面语言？正在进行的生成不受影响。'],
             run: () => reloadIn(nextLocale())},
         {id: 'shortcuts.open', group: G.help, icon: 'keyboard', key: '?', title: ['Keyboard shortcuts', '快捷键速查'], use: ['Every shortcut of every view', '所有视图的快捷键'],
             keywords: ['keys', 'hotkeys', 'kuaijiejian', 'kjj'], run: () => openShortcuts()},

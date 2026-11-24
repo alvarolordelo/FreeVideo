@@ -12,7 +12,24 @@ function normalize(value) {
 export function resolveLocale(search = globalThis.location?.search || '', browserLanguage = globalThis.navigator?.language || '') {
     return normalize(new URLSearchParams(search).get('freevideo_lang')) || normalize(browserLanguage) || 'en';
 }
-export const currentLocale = () => resolveLocale();
+// An installed Task Manager can change the UI language without a page reload.
+// The runtime value must also be visible to native views loaded afterwards.
+let runtimeLocale = null;
+export const currentLocale = () => runtimeLocale || resolveLocale();
+globalThis.addEventListener?.('freevideo-locale-changed', event => {
+    const locale = normalize(event.detail?.locale);
+    if (locale) runtimeLocale = locale;
+});
+
+// Ask the optional reactive frontend to handle a switch. Without it, callers
+// preserve the original native reload behavior instead of showing stale UI.
+export function requestLocale(locale) {
+    const next = normalize(locale);
+    if (!next || typeof globalThis.CustomEvent !== 'function' || typeof globalThis.dispatchEvent !== 'function') return false;
+    const event = new globalThis.CustomEvent('freevideo-locale-request', {cancelable: true, detail: {locale: next}});
+    globalThis.dispatchEvent(event);
+    return event.defaultPrevented;
+}
 export function translateKey(key, locale = currentLocale(), values = {}) {
     const language = normalize(locale) || 'en';
     const value = (Object.hasOwn(catalogs[language], key) ? catalogs[language][key] : undefined)

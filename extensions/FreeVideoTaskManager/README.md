@@ -1,11 +1,11 @@
 # FreeVideo Task Manager — v0.1.0 (preview)
-Independent ComfyUI frontend extension targeting FreeVideo 0.6.8. No changes to upstream files or engine lifecycle.
+Independent ComfyUI frontend extension originally developed against FreeVideo 0.6.8, now shipped in a unified contribution with native locale changes. The extension does not alter the generation engine or its lifecycle; the unified PR also updates upstream frontend files for internationalization.
 
 ## Installation
 Place this folder in ComfyUI/custom_nodes/FreeVideoTaskManager. Restart ComfyUI **only when the queue and agent activity are idle**. Reload the browser; select Tasks in the main FreeVideo navigation. To remove, stop ComfyUI when idle, remove this folder, and start normally. Do not restart during a generation.
 
 ## Design
-- Native top bars, Appearance settings and Tasks expose a shared reactive language selector. All three languages switch without reloading through a reversible, scoped UI adapter (web/native_pt.js) and the generated compatibility catalog (web/native_locales.js). The original startup locale is preserved internally, so native lazy-loaded modules remain consistent. Known navigation, Create controls and common settings labels are translated; specialized messages and views are not fully covered. Native palette language commands outside the shared selector still use the original reload behavior. No original source files, prompts or workflow data are changed. The Tasks header includes Creations, which opens the original library after leaving the dashboard.
+- Native top bars, Appearance settings, command palette and Tasks share a reactive locale through DOM events (`freevideo-locale-request` / `freevideo-locale-changed`). All three languages switch without reloading when the extension is installed, using a reversible, scoped UI adapter (web/native_pt.js) and the generated compatibility catalog (web/native_locales.js). Without the extension, native controls fall back to their original reload behavior. The original startup locale is preserved internally, so native lazy-loaded modules remain consistent. Known navigation, Create controls and common settings labels are translated; specialized messages and views are not fully covered. Prompts and workflow data are not translated. The Tasks header includes Creations, which opens the original library after leaving the dashboard.
 - The sun/moon control follows the shared FreeVideo theme, via FreeVideoShell.setTheme and the native freevideo.theme preference. The dashboard no longer stores a separate theme.
 - The extension also replaces the native Settings sun-like glyph with a cog and adds a separate theme toggle next to Settings. Existing Settings behavior is unchanged; no upstream files are edited.
 - Local UI string catalog (web/i18n.js): Brazilian Portuguese, English and Simplified Chinese. The globe selector beside the theme icon changes the shared language immediately, saves the preference in the current tab's sessionStorage and preserves filters and task monitoring. A fresh launch (freevideo=launch) or new independent tab honors an explicit freevideo_lang parameter; otherwise detects browser locale and falls back to English. Refreshing the current tab retains its selection. Old global language preferences are ignored. Native job names and unknown engine diagnostic strings remain unchanged. The native application itself still supports only English and Chinese; the reactive adapter is a compatibility layer, not a complete upstream localization.
@@ -31,7 +31,7 @@ Upstream discussion: https://github.com/FlashML-org/FreeVideo/issues/1054. The p
 ### Locale validation
 
 The compatibility catalog is derived from FreeVideo's Apache-2.0 licensed UI
-strings and the initial locale catalogs on the separate `feat/native-i18n` branch.
+strings and the initial locale catalogs included in this unified branch.
 To regenerate it from matching source trees, run from the extension directory:
 
 ```sh

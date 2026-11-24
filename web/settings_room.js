@@ -556,7 +556,14 @@ export async function openSetup(options) {
     langSelect.value = currentLocale();
     const langNote = slot(); const langReload = button(t('Reload now', '立即重新载入'), {kind: 'fill', cls: 'is-sm'}); langReload.hidden = true;
     langNote.textContent = t('Changing the language reloads the page; generations keep running.', '切换语言会重新载入页面，正在进行的生成不受影响。');
-    langSelect.onchange = () => { langReload.hidden = langSelect.value === currentLocale(); };
+    langSelect.onchange = () => {
+        if (requestLocale(langSelect.value)) {
+            // With the reactive Task Manager, the UI changes immediately.
+            langReload.hidden = true;
+            return;
+        }
+        langReload.hidden = langSelect.value === currentLocale();
+    };
     langReload.onclick = () => { const url = new URL(location.href); url.searchParams.set('freevideo_lang', langSelect.value); location.replace(url.href); };
     tip(langReload, t('Reload now', '立即重新载入'), t('Reload the page in the chosen language', '以所选语言重新载入页面'));
     const langRow = row({iconName: 'globe', title: t('Interface language', '界面语言'), end: [segmented(langSelect, {label: t('Language', '语言'), tips: {zh: t('Show the interface in Chinese', '界面显示为中文'), en: t('Show the interface in English', '界面显示为英文'), 'pt-BR': translateKey('locale.portuguese')}})]});

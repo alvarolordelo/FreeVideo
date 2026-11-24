@@ -313,6 +313,7 @@ function selectLanguage(value,native=false){
   if(!languageOptions.some(([id])=>id===value))return;
   const changed=value!==LANGUAGE;
   LANGUAGE=value;rememberLanguage(LANGUAGE,tabLanguageStorage);
+  announceNativeLocale();
   for(const control of document.querySelectorAll(".ftm-native-language"))syncLanguageControl(control,true);
   // Keep the startup locale unchanged: lazy native modules still read it.
   // Only translate their UI labels, never recreate the current view or reload.
@@ -320,6 +321,26 @@ function selectLanguage(value,native=false){
   for(const b of document.querySelectorAll(".ftm-native-theme"))syncNativeTheme(b);
   for(const tab of document.querySelectorAll(".ftm-tab")){const span=tab.querySelector("span");if(span)span.textContent=t("Tasks");tab.dataset.label=t("Tasks");}
   if(changed&&ui){populate(ui);fillNav(ui,nativeNav);syncTheme(ui);render();}
+}
+// Native Settings and the command palette use these DOM events when this
+// extension is installed. Without the extension they retain their original
+// reload-based locale switching. Keep the native translation helpers in sync
+// with the same tab-local selection used by Tasks.
+function announceNativeLocale(){
+  if(typeof globalThis.CustomEvent!=="function"||typeof globalThis.dispatchEvent!=="function")return;
+  globalThis.dispatchEvent(new CustomEvent("freevideo-locale-changed",{detail:{locale:LANGUAGE}}));
+}
+let localeBridgeBound=false;
+function bindNativeLocaleBridge(){
+  if(localeBridgeBound||typeof globalThis.addEventListener!=="function")return;
+  localeBridgeBound=true;
+  globalThis.addEventListener("freevideo-locale-request",event=>{
+    const locale=event.detail?.locale;
+    if(!languageOptions.some(([id])=>id===locale))return;
+    event.preventDefault();
+    selectLanguage(locale,true);
+  });
+  announceNativeLocale();
 }
 function bindLanguageMenu(d,native=false){
   const trigger=d.querySelector(".language"),menu=d.querySelector(".language-menu");
@@ -378,6 +399,7 @@ async function open(anchor){
 }
 function install(){
   if(observer)return;
+  bindNativeLocaleBridge();
   const css=el("link");css.rel="stylesheet";css.href=new URL("./tasks.css",import.meta.url).href;document.head.append(css);
   const attach=()=>{for(const nav of document.querySelectorAll(".fv-view-switch")){if(nav.querySelector(".ftm-tab"))continue;const b=button("",()=>open(b),"ftm-tab fv-tb-tab");b.append(el("span","",t("Tasks")));b.dataset.view="tasks";b.dataset.label=t("Tasks");b.setAttribute("aria-pressed","false");b.setAttribute("aria-haspopup","dialog");b.title="FreeVideo Task Manager";nav.append(b);}attachNativeControls();syncNativeSettingsTheme();
     if(!nativePortuguese){

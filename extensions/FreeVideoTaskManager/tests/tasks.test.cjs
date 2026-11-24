@@ -65,6 +65,28 @@ test("main navigation and dashboard share the locale without reloading or changi
   assert.equal(evaluate(c,"location.href"),"http://localhost/?freevideo_lang=en#workflow");
   assert.equal(evaluate(c,"saved"),"zh");
 });
+test("native Settings and palette locale requests use the same reactive Tasks selector",()=>{
+  const c=context();
+  evaluate(c,`globalThis.listeners={};globalThis.localeEvents=[];
+    globalThis.addEventListener=(kind,fn)=>listeners[kind]=fn;
+    globalThis.CustomEvent=class{constructor(type,options){this.type=type;this.detail=options.detail;}};
+    globalThis.dispatchEvent=ev=>{localeEvents.push([ev.type,ev.detail.locale]);};
+    globalThis.location={search:'?freevideo_lang=en',href:'http://localhost/?freevideo_lang=en#workflow'};
+    document.querySelectorAll=()=>[];
+    nativePortuguese={setLanguage(locale){globalThis.overlay=locale}};
+    bindNativeLocaleBridge();
+    globalThis.request={detail:{locale:'pt-BR'},prevented:false,preventDefault(){this.prevented=true}};
+    listeners['freevideo-locale-request'](request);`);
+  assert.equal(evaluate(c,"request.prevented"),true);
+  assert.equal(evaluate(c,"LANGUAGE"),"pt-BR");
+  assert.equal(evaluate(c,"overlay"),"pt-BR");
+  assert.equal(evaluate(c,"localeEvents.at(-1)[1]"),"pt-BR");
+  assert.equal(evaluate(c,"location.href"),"http://localhost/?freevideo_lang=en#workflow");
+  evaluate(c,`globalThis.invalid={detail:{locale:'es'},prevented:false,preventDefault(){this.prevented=true}};
+    listeners['freevideo-locale-request'](invalid);`);
+  assert.equal(evaluate(c,"invalid.prevented"),false);
+  assert.equal(evaluate(c,"LANGUAGE"),"pt-BR");
+});
 test("English and Chinese native labels can round-trip through Portuguese",()=>{
   const c=context();
   assert.equal(evaluate(c,"nativeLabel('Create','zh')"),"创作面板");

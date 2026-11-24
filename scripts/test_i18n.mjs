@@ -58,3 +58,36 @@ test('all three locales are reachable from command palette', () => {
     assert.equal(nextLocale('zh'), 'pt-BR');
     assert.equal(nextLocale('pt-BR'), 'en');
 });
+test('optional reactive locale bridge updates native helpers without reloading', async () => {
+    const bus = new EventTarget();
+    const oldListen = globalThis.addEventListener;
+    const oldDispatch = globalThis.dispatchEvent;
+    const oldCustomEvent = globalThis.CustomEvent;
+    try {
+        globalThis.addEventListener = bus.addEventListener.bind(bus);
+        globalThis.dispatchEvent = bus.dispatchEvent.bind(bus);
+        globalThis.CustomEvent ??= class extends Event {
+            constructor(type, options) { super(type, options); this.detail = options?.detail; }
+        };
+        // A separately loaded native module registers its listener on import.
+        const native = await import('../web/i18n.js?reactive-bridge-test=1');
+        assert.equal(native.requestLocale('pt-BR'), false); // no extension installed
+        bus.addEventListener('freevideo-locale-request', event => {
+            event.preventDefault();
+            bus.dispatchEvent(new CustomEvent('freevideo-locale-changed', {detail: {locale: event.detail.locale}}));
+        });
+        assert.equal(native.requestLocale('pt-BR'), true);
+        assert.equal(native.currentLocale(), 'pt-BR');
+        assert.equal(native.translateKey('nav.create'), 'Criar');
+        assert.equal(native.requestLocale('zh'), true);
+        assert.equal(native.currentLocale(), 'zh');
+        assert.equal(native.requestLocale('invalid'), false);
+    } finally {
+        if (oldListen === undefined) delete globalThis.addEventListener;
+        else globalThis.addEventListener = oldListen;
+        if (oldDispatch === undefined) delete globalThis.dispatchEvent;
+        else globalThis.dispatchEvent = oldDispatch;
+        if (oldCustomEvent === undefined) delete globalThis.CustomEvent;
+        else globalThis.CustomEvent = oldCustomEvent;
+    }
+});
